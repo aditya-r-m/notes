@@ -1,0 +1,37 @@
+hl|tc| Dynamic Programming
+hs| Policy Evaluation (Prediction)
+First, we consider how to compute the state-value function \( v_\pi \) for an arbitrary policy \( \pi \). This is known as the prediction problem, also referred to as policy evaluation.
+tc| \( v_\pi(s) = \sum_{a \in \mathcal{A}} \pi(a) \sum_{s' \in \mathcal{S}} \sum_{r \in \mathcal{R}} p(s', r \ | \ s, a) [r + \gamma v_\pi(s')] \ \)
+\( v_\pi \) can be thought of as the fixed point of a series of approximations \( v_0, v_1, .., v_k \). The initial value \( v_0 \) is chosen arbitrarily except for terminal states (if any), where it must be \( 0 \). The update rule is defined using the Bellman equation as follows,
+tc| \( v_{k+1} = \sum_{a \in \mathcal{A}} \pi(a) \sum_{s' \in \mathcal{S}} \sum_{r \in \mathcal{R}} p(s', r \ | \ s, a) [r + \gamma v_k(s')] \)
+The pure implementation to compute \( v_{k+1} \) from \( v_k \) will derive each entry in the new approximation only using the entries of the previous approximation. But an in-place approach usually converges faster - overwriting values in the same data structure \( v_k \) as it sweeps through the state space to turn it into \( v_{k+1} \), and using any previously updated state-values in the same sweep to derive the current state-value.
+hs| Policy Improvement
+The following statement for any two deterministic policies \( \pi, \pi^\prime \) is known as the Policy Improvement Theorem,
+tc| \( v_\pi(s) \le q_\pi(s, \pi^\prime(s)) \ \forall s \in \mathcal{S} \implies v_\pi(s) \le v_{\pi^\prime}(s) \ \forall s \in \mathcal{S} \)
+The key idea behind the proof of this fact is simply expanding \( q_\pi(s, \pi^\prime(s)) \) till we get \( v_{\pi^\prime}(s) \),
+tc| \(\begin{aligned} v_\pi(s) &\le q_\pi(s, \pi^\prime(s)) \\ &\le E_{\pi^\prime}[R_{t+1} + \gamma v_\pi(S_{t+1}) \ | \ S_t = s] \\ &\le E_{\pi^\prime}[R_{t+1} + \gamma R_{t+2} + \gamma^2 v_\pi(S_{t+2}) \ | \ S_t = s] \\ &\vdots \\ &\le E_{\pi^\prime}[R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \gamma^3 R_{t+4} + \ldots \ | \ S_t = s] \\ &= v_{\pi^\prime}(s) \end{aligned}\)
+Using this fact, we can derive an improved policy \( v_{\pi^\prime} \) from \( v_\pi \) as follows,
+tc| \( \pi^\prime(s) = \arg\max_{a \in \mathcal{A}} q_\pi (s, a) = \arg\max_{a \in \mathcal{A}} \sum_{s^\prime \in S} \sum_{r \in \mathcal{R}} p(s', r \ | \ s, a) [r + \gamma v_\pi(s^\prime)] \)
+Note that the equation for the fixed point of this series aligns with the definition of optimal value function,
+tc| \( v_{\pi^\prime} = v_\pi \iff v_\pi = v_* \)
+These ideas also carry over to stochastic policies. In addition, if there are ties in the policy improvement computation for different actions, we can apportion the probability of selecting these actions in any way as long as all submaximal actions are chosen with probability \( 0 \).
+hs| Policy Iteration
+Policy Evaluation & Improvement can be performed in sequence to iteratively move towards the optimal policy, starting from a default policy,
+\( \pi_0 \xrightarrow{E} v_0 \xrightarrow{I} \pi_1 \xrightarrow{E} v_1 \xrightarrow{I} \pi_2 \xrightarrow{E} \ldots \xrightarrow{I} \pi_* \xrightarrow{E} v_* \)
+\( \text{Initialize} : V(s) \in \mathcal{R}, \pi(s) \in \mathcal{A} \ \forall s \in \mathcal{S} \)
+\( \text{Evaluate} : \text{do}\  \{ \ \Delta \leftarrow 0; \ \text{for} \ s \in \mathcal{S} \ \{ \ v \leftarrow V(s); \ V(s) \leftarrow \sum_{s^\prime, r} p(s^\prime, r \ | \ s, \pi(s)) \ [r + \gamma V(s^\prime)]; \ \Delta = \max(\Delta, |v - V(s)|) \} \} \ \text{while} \ (\Delta > \epsilon) \)
+\( \text{Improve} : f \leftarrow True; \ \text{for } s \in \mathcal{S} \ \{ o \leftarrow \pi(s); \ \pi(s) \leftarrow \arg\max_{a} \sum_{s^\prime, r} p(s^\prime, r \ | \ s, a) \ [r + \gamma V(s^\prime)]; \ f \leftarrow f \land (o = \pi(s)) \}; \ \text{if} \ \lnot f, \ \text{goto Evaluate.} \)
+The same procedure also works with the q-function,
+\( \text{Initialize} : Q(s,a) \in \mathcal{R}, \pi(s) \in \mathcal{A} \ \forall (s,a) \in \mathcal{S} \times \mathcal{A} \)
+\( \text{Evaluate} : \text{do}\  \{ \ \Delta \leftarrow 0; \ \text{for} \ (s, a) \in \mathcal{S} \times \mathcal{A} \ \{ \ q \leftarrow Q(s, a); \ Q(s, a) \leftarrow \sum_{s^\prime, r} p(s^\prime, r \ | \ s, a) \ [r + \gamma Q(s^\prime, \pi(s^\prime))]; \ \Delta = max(\Delta, |q - Q(s, a)|) \} \} \ \text{while} \ (\Delta > \epsilon) \)
+\( \text{Improve} : f \leftarrow True; \ \text{for } s \in \mathcal{S} \ \{ o \leftarrow \pi(s); \ \pi(s) \leftarrow \arg\max_{a} Q(s, a); \ f \leftarrow f \land (o = \pi(s)) \}; \ \text{if} \ \lnot f, \ \text{goto Evaluate.} \)
+hs| Value Iteration
+The procedue of basic Policy iteration sequences full sweeps of policy evaluations & improvements one after another. We can also merge the evaluation & Improvement steps into one core loop,
+\( \text{do}\  \{ \ \Delta \leftarrow 0; \ \text{for} \ s \in \mathcal{S} \ \{ \ v \leftarrow V(s); \ V(s) \leftarrow \max_a \sum_{s^\prime, r} p(s^\prime, r \ | \ s, a) \ [r + \gamma V(s^\prime)]; \ \Delta = \max(\Delta, |v - V(s)|) \} \} \ \text{while} \ (\Delta > \epsilon) \)
+The same minor patch can be applied to q-learning,
+\( \text{do}\  \{ \ \Delta \leftarrow 0; \ \text{for} \ (s, a) \in \mathcal{S} \times \mathcal{A} \ \{ \ q \leftarrow Q(s, a); \ Q(s, a) \leftarrow \sum_{s^\prime, r} p(s^\prime, r \ | \ s, a) \ [r + \gamma \max_{a^\prime} Q(s^\prime, a^\prime)]; \ \Delta = max(\Delta, |q - Q(s, a)|) \} \} \ \text{while} \ (\Delta > \epsilon) \)
+Faster convergence can be achieved by performing multiple evaluation sweeps before every improvement sweep. For the snippet above, this effectively means that the maximization operation is applied to some sweeps, & previously known greedy action is selected otherwise.
+hs| Generalized Policy Iteration
+GPI is a recurring theme in reinforcement learning, which consists of two simultaneous process interacting with each other: Improvement step shifts the policy value away from previous Evaluation, & Evaluation creates new baseline for further improvement. These steps can be viewed as both competing & cooperating - slightly invalidating the previous work done by the other step, but jointly arriving at optimal policy.
+The processes may interact at even finer grains with techniques such as asynchronous dynamic programming, where we only evaluate & improve policy over a small subset of the overall state space, potentially focusing only on the states most relevant to the agent. The basic idea is that in problems with an intractable number of states, we may be able to generate good results by updating values for some states less frequently than others - or not at all. A natural scenario for this will be an agent learning while actually experiencing the MDP.
+One key property of Dynamic Programming based models is the flow of information from future state value estimates to current state value evaluation. This is referred to as bootstrapping, which is a commonly used process employed by many reinforcement learning techniques. Dynamic Programming models use this in conjunction with a complete & accurate model of the environment.
