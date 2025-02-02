@@ -1,0 +1,27 @@
+hl|tc| Finite Markov Decision Processes
+In a Markov Decision Process, the agent and environment interact at each of a sequence of discrete time steps \( t=0,1,.. \)
+At each timestep, the agent receives a representation of the environment state \( S_t \in \mathcal{S} \) and selects an action \( A_t \in \mathcal{A} \). As a consequence, environment returns a numerical reward \( R_{t+1} \in \mathcal{R} \) and a new state representation \( S_{t+1} \in \mathcal{S} \).
+In a finite MDP, all the sets \( \mathcal{S, A, R} \) have a finite number of elements.
+The dynamics function \( p: \mathcal{S \times R \times S \times A} \rightarrow [0,1] \) is an ordinary deterministic function of \( 4 \) arguments such that,
+tc| \( p(s', r \ | \ s, a) = Pr\{S_t = s', R_t = r \ | \ S_{t-1} = s, A_{t - 1} = a \}, \)
+tc| \( \sum_{s' \in \mathcal{S}} \sum_{r \in \mathcal{R}} \ p(s', r \ | \ s, a) = 1 \ \forall s \in \mathcal{S}, a \in \mathcal{A} \)
+On the basis of the dynamics functions, we can compute anything we want to know about the environment, such as state transition probabilities or expected rewards,
+tc| \( p(s' \ | \ s, a) =Pr\{ S_t = s' \ | \ S_{t-1} = s, A_{t-1} = a \} = \sum_{r \in \mathcal{R}} \ p(s', r \ | \ s, a) \)
+tc| \( r(s, a) = E[R_t \ | \ S_{t-1} = s, A_{t-1} = a] = \sum_{r \in \mathcal{R}} \ r \sum_{s' \in \mathcal{S}} \ p(s', r \ | \ s,a) \)
+tc| \( r(s, a, s') = E[R_t | S_{t-1} = s, A_{t-1} = a, S_t = s'] = \sum_{r \in \mathcal{R}} \ r \frac{p(s', \ r \ | \ s, a)}{p(s' \ | \ s, a)} \)
+The return is defined as \( G_t = \sum_{k=0}^\infty \gamma^k R_{t + 1 + k} = R_{t+1} + \gamma G_{t+1} \) with the discount factor \( \gamma \in [0,1] \).
+The tasks may be continuous or episodic. The representation can still be kept common for both because (a) episodes don't need to be distinguished from each other for MDPs (b) A final absorbing state with 0 further rewards can be added to represent finite episodes as continuous tasks. In episodic case, the return will be well defined even with \( \gamma = 1 \) which is not true for continuous tasks.
+An agent acts according to some policy, \( \pi(a|s) = Pr \{ A_t = a \ | \ S_t = s \} \)
+The value function of a state \( s \) under a policy \( \pi \) is as follows,
+tc| \( v_\pi(s) = E_\pi[ G_t \ | \ S_t = s ] = E_\pi[ \sum_{k=0}^\infty \gamma^k R_{t + 1 + k} \ | \ S_t = s] \)
+Similarly, the value function taking an action \( a \) in state \( s \) under policy \( \pi \) is as follows,
+tc| \( q_\pi(s, a) = E_\pi[G_{t} \ | \ S_t = s, A_t = a ] = E_\pi[ \sum_{k=0}^\infty \gamma^k R_{t+1+k} \ | \ S_t = s, A_t = a ] \)
+These two value functions are closely related,
+tc| \( v_\pi(s) = \sum_{a \in \mathcal{A}} \pi(a|s) \ q_\pi(s, a) \)
+tc| \( q_\pi(s, a) = \sum_{s' \in \mathcal{S}} \sum_{r \in \mathcal{R}} p(s', r \ | \ s, a) [r + \gamma v_\pi(s')] \)
+tc| \( \implies v_\pi(s) = \sum_{a \in \mathcal{A}} \pi(a | s) \sum_{s' \in \mathcal{S}} \sum_{r \in R} p(s', r \ | \ s, a) [r + \gamma v_\pi(s')] \)
+tc| \( \implies q_\pi(s, a) = \sum_{s' \in \mathcal{S}} \sum_{r \in \mathcal{R}} p(s', r \ | \ s, a) [r + \gamma\sum_{a' \in \mathcal{A}} \pi(a|s) \ q_\pi(s', a')] \)
+The optimal value functions can be defined as follows,
+tc| \( v_*(s) = \max_{a \in \mathcal{A}} \sum_{s' \in \mathcal{S}} \sum_{r \in \mathcal{R}} p(s', r \ | \ s, a) [r + \gamma v_*(s')] \)
+tc| \( q_*(s, a) = \sum_{s' \in \mathcal{S}} \sum_{r \in \mathcal{R}} p(s', r \ | \ s, a) [r + \gamma \max_{a' \in \mathcal{A}} q_*(s', a')] \)
+In theory, value functions can be learnt perfectly by brute-force search, which is equivalent to expanding & solving these recurrence relations till the final states. In practice, constraints on space & time complexity prohibit this type of exact value computation. The focus of reinforcement learning is to approximate an ideal policy, which different agents can do to varying degrees of success.
